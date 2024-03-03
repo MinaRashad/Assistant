@@ -63,6 +63,4 @@ recognition.onresult = function(event) {
 
 recognition.onnomatch = () => {
   console.log("Nooo!")
-
-  diagnostic.textContent = "I didn't recognize that color.";
 };
