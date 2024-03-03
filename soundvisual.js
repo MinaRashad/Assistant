@@ -21,18 +21,22 @@ const HEIGHT = canvas.height
 
 // visualizing point location
 const R = HEIGHT/8
+const ANGULAR_VELOCITY = 0.03
 let theta = 0
+
 
 // visual Source
 // this will be a state variable from values: mic, synth, none
 let Audio_source = "mic"
-
+let analyser = null
+let dataArray = null
 
 
 function clearCanvas() {
-    // color black
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    // clear the canvas
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'
+    ctx.fillRect(0, 0, WIDTH, HEIGHT)
+
 }
 
 function drawPoint(r, theta, color) {
@@ -50,47 +54,49 @@ function drawPoint(r, theta, color) {
 
 
 // access the mic and returns the current amplitude and frequency
-function micStream(){
+async function get_micStream(){
+    console.log("called get_micStream")
     if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
         navigator.mediaDevices.getUserMedia({ audio: true })
         .then(stream =>{
             console.log("Mic access granted")
             
             const audioCtx = new AudioContext()
-            const analyser = audioCtx.createAnalyser()
+            analyser = audioCtx.createAnalyser()
             const source = audioCtx.createMediaStreamSource(stream)
             source.connect(analyser)
             analyser.fftSize = 32
             const bufferLength = analyser.frequencyBinCount
-            const dataArray = new Uint8Array(bufferLength)
+            dataArray = new Uint8Array(bufferLength)
             analyser.getByteTimeDomainData(dataArray)
             analyser.getByteFrequencyData(dataArray)
 
             const WIDTH = canvas.width
             const HEIGHT = canvas.height
 
+            return;
             
-            const draw = () => {
-                clearCanvas()
-                analyser.getByteTimeDomainData(dataArray)
-                analyser.getByteFrequencyData(dataArray)
+            // const draw = () => {
+            //     clearCanvas()
+            //     analyser.getByteTimeDomainData(dataArray)
+            //     analyser.getByteFrequencyData(dataArray)
 
-                drawSound(dataArray, bufferLength, 0, theta)
+            //     drawSound(dataArray, bufferLength, 0, theta)
 
-                theta += 0.01
+            //     theta += 0.01
 
-                if (theta > 2 * Math.PI) {
-                    theta = 0
-                }
+            //     if (theta > 2 * Math.PI) {
+            //         theta = 0
+            //     }
 
-                if(Audio_source === "mic")
-                requestAnimationFrame(draw)
+            //     if(Audio_source === "mic")
+            //     requestAnimationFrame(draw)
 
-                if(Audio_source === "none"){
-                    drawSilence()
-                }
-            }
-            draw()
+            //     if(Audio_source === "none"){
+            //         drawSilence()
+            //     }
+            // }
+            // draw()
         })
         .catch(err => {
             alert("The following error occured: " + err)
@@ -101,20 +107,30 @@ function micStream(){
     }
 }
 
-function drawSilence(){
+function draw_silence(){
     clearCanvas()
     drawPoint(R, theta, "white")
-    theta += 0.01
+    theta += ANGULAR_VELOCITY
     if (theta > 2 * Math.PI) {
         theta = 0
     }
-    if(Audio_source === "none")
-    requestAnimationFrame(drawSilence)
+}
 
-    if(Audio_source === "mic"){
-        return
+function draw_mic(){
+    analyser.getByteTimeDomainData(dataArray)
+    analyser.getByteFrequencyData(dataArray)
+
+    drawSound(dataArray, dataArray.length, 0, theta)
+
+    theta += ANGULAR_VELOCITY
+
+    if (theta > 2 * Math.PI) {
+        theta = 0
     }
 }
+
+
+
 
 function drawSound(dataArray, bufferLength, amplitude, theta){
     for (let i = 0; i < bufferLength; i++) {
@@ -139,4 +155,25 @@ function stop(){
     Audio_source = "none"
 }
 
-init()
+
+
+// main code
+get_micStream()
+
+setInterval(() => {
+    if(analyser !== null){
+        clearCanvas()
+
+        if (Audio_source === "mic"){
+            draw_mic()
+        }
+        else if(Audio_source === "none"){
+            draw_silence()
+        }
+
+
+    }
+    else{
+        draw_silence()
+    }
+}, 1000/60)
