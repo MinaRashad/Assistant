@@ -14,7 +14,7 @@ const canvas = document.getElementById('soundvisual')
 const ctx = canvas.getContext('2d')
 
 canvas.width = window.innerWidth
-canvas.height = window.innerHeight*0.9
+canvas.height = window.innerHeight
 
 const WIDTH = canvas.width
 const HEIGHT = canvas.height
